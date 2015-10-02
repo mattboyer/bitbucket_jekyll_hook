@@ -33,7 +33,6 @@ BitBucket webhook to trigger a static site build through Jekyll
 """
 from __future__ import print_function
 
-import logging
 import os
 import subprocess
 import tempfile
