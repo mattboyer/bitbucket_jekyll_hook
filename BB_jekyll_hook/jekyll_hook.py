@@ -40,7 +40,7 @@ import tempfile
 from flask import Flask, request
 
 
-class GitError(Exception):
+class CmdError(Exception):
     pass
 
 
@@ -79,7 +79,7 @@ class Runner(object):
             out, err = git_process.communicate()
             git_process.wait()
         except Exception as e:
-            raise GitError("Couldn't run '{cmd} {args}':{newline}{ex}".format(
+            raise CmdError("Couldn't run '{cmd} {args}':{newline}{ex}".format(
                 cmd=self._executable,
                 args=' '.join(args),
                 newline=os.linesep,
@@ -89,7 +89,7 @@ class Runner(object):
         if (0 != git_process.returncode) or err:
             if err:
                 err = err.decode('utf_8')
-            raise GitError("'{cmd} {args}' failed with:{newline}{err}".format(
+            raise CmdError("'{cmd} {args}' failed with:{newline}{err}".format(
                 cmd=self._executable,
                 args=' '.join(args),
                 newline=os.linesep,
