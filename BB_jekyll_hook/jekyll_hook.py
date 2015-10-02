@@ -161,10 +161,10 @@ class WebHook(object):
 
 
 app = Flask(__name__)
-app.debug = True
 
 PUBLISH_BRANCH = 'live'
 PUBLISH_DEST = '/var/www/static_site'
+
 
 @app.route('/', methods=['POST'])
 def process_hook():
@@ -194,7 +194,6 @@ def process_hook():
                 ])
                 return "built"
     return "not_built"
-
 
 
 if '__main__' == __name__:
