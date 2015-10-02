@@ -1,0 +1,4 @@
+bitbucket_jekyll_hook.egg-info/
+.coverage
+*.pyc
+RELEASE-VERSION
