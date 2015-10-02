@@ -33,6 +33,7 @@ BitBucket webhook to trigger a static site build through Jekyll
 """
 from __future__ import print_function
 
+import logging
 import os
 import subprocess
 import tempfile
@@ -50,7 +51,7 @@ class Runner(object):
         if workdir:
             self._workdir = workdir
         else:
-            self._workdir = os.path.abspath(os.curdir)
+            self._workdir = os.path.realpath(os.curdir)
         self._executable = cmd
 
     def run(self, args, env=None):
@@ -161,10 +162,26 @@ class WebHook(object):
 
 
 app = Flask(__name__)
+app.debug = True
 
-PUBLISH_BRANCH = 'live'
-PUBLISH_DEST = '/var/www/static_site'
+try:
+    PUBLISH_BRANCH = os.environ['PUBLISH_BRANCH']
+except:
+    PUBLISH_BRANCH = 'master'
 
+try:
+    PUBLISH_DEST = os.path.realpath(os.environ['PUBLISH_DEST'])
+except:
+    PUBLISH_DEST = '/var/www/'
+
+if not os.path.isdir(PUBLISH_DEST):
+    raise SystemExit(1)
+
+app.logger.info(
+    "Listening for pushes to %s - will build to %s",
+    PUBLISH_BRANCH,
+    PUBLISH_DEST
+)
 
 @app.route('/', methods=['POST'])
 def process_hook():
