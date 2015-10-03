@@ -34,6 +34,7 @@ BitBucket webhook to trigger a static site build through Jekyll
 from __future__ import print_function
 
 import os
+import shutil
 import subprocess
 import tempfile
 
@@ -165,14 +166,14 @@ app.debug = True
 
 try:
     PUBLISH_BRANCH = os.environ['PUBLISH_BRANCH']
-except:
+except KeyError:
     PUBLISH_BRANCH = 'master'
 
 try:
     PUBLISH_DEST = os.path.realpath(os.environ['PUBLISH_DEST'])
     if not os.path.isdir(PUBLISH_DEST):
         raise ValueError
-except:
+except Exception:
     PUBLISH_DEST = '/var/www/'
 
 app.logger.info(
@@ -180,6 +181,7 @@ app.logger.info(
     PUBLISH_BRANCH,
     PUBLISH_DEST
 )
+
 
 @app.route('/', methods=['POST'])
 def process_hook():
@@ -193,23 +195,36 @@ def process_hook():
     for updated_ref in hook.pushes:
         if ('branch' == updated_ref.type and
                 PUBLISH_BRANCH == updated_ref.destination):
-            with tempfile.TemporaryDirectory() as temp_dir:
-                git_runner = Runner('git', temp_dir)
-                git_runner.run([
-                    'clone', hook.repo.url,
-                    '-q',
-                    '-b', updated_ref.destination,
-                    '.',
-                ])
-                jekyll_runner = Runner('jekyll', temp_dir)
-                jekyll_runner.run([
-                    'build',
-                    '--source', temp_dir,
-                    '--destination', PUBLISH_DEST
-                ])
-                return "built"
+            try:
+                build_jekyll_from_repo(hook.repo.url, updated_ref.destination)
+            except:
+                raise
+
+            app.logger.info(
+                "Branch '%s' built successfully",
+                PUBLISH_BRANCH
+            )
+            return "built"
     return "not_built"
 
+def build_jekyll_from_repo(repo_url, repo_ref):
+    try:
+        temp_dir = tempfile.mkdtemp()
+        git_runner = Runner('git', temp_dir)
+        git_runner.run([
+            'clone', repo_url,
+            '-q',
+            '-b', repo_ref,
+            '.',
+        ])
+        jekyll_runner = Runner('jekyll', temp_dir)
+        jekyll_runner.run([
+            'build',
+            '--source', temp_dir,
+            '--destination', PUBLISH_DEST
+        ])
+    finally:
+        shutil.rmtree(temp_dir)
 
 if '__main__' == __name__:
     app.run(host='0.0.0.0', port=8000)
